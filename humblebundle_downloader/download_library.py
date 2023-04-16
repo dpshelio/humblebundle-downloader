@@ -25,12 +25,14 @@ class DownloadLibrary:
 
     def __init__(self, library_path, cookie_path=None, cookie_auth=None,
                  progress_bar=False, ext_include=None, ext_exclude=None,
+                 preferred=False,
                  platform_include=None, purchase_keys=None, trove=False,
                  update=False):
         self.library_path = library_path
         self.progress_bar = progress_bar
         self.ext_include = [] if ext_include is None else list(map(str.lower, ext_include))  # noqa: E501
         self.ext_exclude = [] if ext_exclude is None else list(map(str.lower, ext_exclude))  # noqa: E501
+        self.preferred = preferred
 
         if platform_include is None or 'all' in platform_include:
             # if 'all', then do not need to use this check
@@ -243,6 +245,9 @@ class DownloadLibrary:
             try: os.makedirs(product_folder)  # noqa: E701
             except OSError: pass  # noqa: E701
 
+            if self.preferred:
+                available_exts = self._extract_ext_available(download_type['download_struct'])
+                ext_download = self._choose_ext(available_exts, self.ext_include)
             # Download each file type of a product
             for file_type in download_type['download_struct']:
                 try:
@@ -256,7 +261,7 @@ class DownloadLibrary:
                 url_filename = url.split('?')[0].split('/')[-1]
                 cache_file_key = order_id + ':' + url_filename
                 ext = url_filename.split('.')[-1]
-                if self._should_download_file_type(ext) is False:
+                if self._should_download_file_type(ext) is False or (self.preferred and ext.lower() != ext_download):
                     logger.info("Skipping the file {url_filename}"
                                 .format(url_filename=url_filename))
                     continue
@@ -411,3 +416,21 @@ class DownloadLibrary:
         elif self.ext_exclude != []:
             return ext not in self.ext_exclude
         return True
+
+    def _extract_ext_available(self, file_types):
+        exts = []
+        for file_type in file_types:
+            try:
+                url = file_type['url']['web']
+            except KeyError:
+                continue
+
+            url_filename = url.split('?')[0].split('/')[-1]
+            exts.append(url_filename.split('.')[-1])
+        return exts
+
+    def _choose_ext(self, exts, pref_exts):
+        order_exts = [(x, pref_exts.index(x)) for x in exts if pref_exts.count(x)]
+        order_exts.sort(key=lambda x: x[1])
+        if order_exts:
+            return order_exts[0][0]

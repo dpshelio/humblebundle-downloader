@@ -68,6 +68,11 @@ def parse_args(args):
         help="Only download files with these extensions. Ex: -i pdf mobi",
     )
     parser.add_argument(
+        '--preferred',
+        action='store_true',
+        help="If -i is used, then download only once in the given order or preference",
+    )
+    parser.add_argument(
         '-k', '--keys',
         type=str, nargs='*',
         help=("The purchase download key. Find in the url on the "
@@ -79,6 +84,8 @@ def parse_args(args):
 
 def cli():
     cli_args = parse_args(sys.argv[1:])
+    if cli_args.preferred and not cli_args.include:
+        print("Preferred option is only allowed when used it with the include flag")
 
     from .download_library import DownloadLibrary
     DownloadLibrary(
@@ -88,6 +95,7 @@ def cli():
         progress_bar=cli_args.progress,
         ext_include=cli_args.include,
         ext_exclude=cli_args.exclude,
+        preferred=cli_args.preferred,
         platform_include=cli_args.platform,
         purchase_keys=cli_args.keys,
         trove=cli_args.trove,

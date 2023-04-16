@@ -47,6 +47,14 @@ def test_exclude_logic_empty():
     assert dl._should_download_file_type('EPub') is True
     assert dl._should_download_file_type('mobi') is True
 
+def test_select_preferred():
+    dl = DownloadLibrary(
+        'fake_library_path',
+        ext_exclude=[],
+    )
+    assert dl._choose_ext(['czb', 'mobi', 'pdf'], ['mobi', 'czb']) == 'mobi'
+    assert dl._choose_ext(['czb', 'mobi', 'pdf'], ['czb', 'mobi']) == 'czb'
+    assert dl._choose_ext(['czb', 'mobi', 'pdf'], ['apk', 'df']) is None
 
 ###
 # _should_download_platform
